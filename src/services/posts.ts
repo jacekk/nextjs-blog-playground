@@ -1,6 +1,8 @@
-import { Octokit } from 'octokit';
-import { PostMeta } from '_types/posts';
 import { compileMDX } from 'next-mdx-remote/rsc';
+import { Octokit } from 'octokit';
+
+import { PostMeta } from '_types/posts';
+
 import { CustomImage } from '../components/CustomImage';
 import Video from '../components/Video';
 
