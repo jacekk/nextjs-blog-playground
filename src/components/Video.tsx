@@ -2,9 +2,9 @@ type VideoProps = {
 	id: string;
 };
 
-export default function Video({ id }: VideoProps) {
+export function Video({ id }: VideoProps) {
 	return (
-		<div className="aspect-w-16 aspect-h-9">
+		<div className="aspect-w-16 aspect-h-9 my-4">
 			<iframe
 				src={`https://www.youtube.com/embed/${id}`}
 				title="YouTube video player"

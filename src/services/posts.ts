@@ -1,26 +1,35 @@
 import { compileMDX } from 'next-mdx-remote/rsc';
 import { Octokit } from 'octokit';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeSlug from 'rehype-slug';
 
 import { PostMeta } from '_types/posts';
 
 import { CustomImage } from '../components/CustomImage';
-import Video from '../components/Video';
+import { Video } from '../components/Video';
+
+const EXT = '.mdx';
+
+const REPO_CONFIG = {
+	owner: 'gitdagray',
+	repo: 'test-blogposts',
+	tree_sha: 'main',
+};
 
 export async function getPostsData(): Promise<PostMeta[]> {
 	const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_TOKEN });
 	const { data } = await octokit.rest.git.getTree({
-		owner: 'gitdagray',
+		...REPO_CONFIG,
 		recursive: 'true',
-		repo: 'test-blogposts',
-		tree_sha: 'main',
 	});
-	const files = data.tree.map((i) => ({ id: i.path || '', url: i.url || '' }));
-	const onlyMdx = files.filter((i) => i.id.endsWith('.mdx'));
+	const files = data.tree.map((i) => i.path || '');
+	const onlyMdx = files.filter((i) => i.endsWith(EXT)).map((i) => i.replace(EXT, ''));
 
 	const posts: PostMeta[] = [];
 
-	for (const file of onlyMdx) {
-		const post = await getPostMeta(file);
+	for (const id of onlyMdx) {
+		const post = await getPostMeta(id);
 		if (post) {
 			posts.push(post);
 		}
@@ -29,16 +38,14 @@ export async function getPostsData(): Promise<PostMeta[]> {
 	return posts;
 }
 
-async function getPostMeta({ id, url }: { id: string; url: string }): Promise<PostMeta | null> {
+async function getPostMeta(id: string): Promise<PostMeta | null> {
 	const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_TOKEN });
 	let content = '';
 
 	try {
 		const { data } = await octokit.rest.repos.getContent({
-			owner: 'gitdagray',
-			repo: 'test-blogposts',
-			tree_sha: 'main',
-			path: id,
+			...REPO_CONFIG,
+			path: id + EXT,
 		});
 		if (!data) {
 			return null;
@@ -50,9 +57,24 @@ async function getPostMeta({ id, url }: { id: string; url: string }): Promise<Po
 	}
 
 	const lines = Buffer.from(content, 'base64').toString('utf-8');
+
 	const parsed = await compileMDX<Pick<PostMeta, 'title' | 'date' | 'tags'>>({
 		components: { CustomImage, Video },
-		options: { parseFrontmatter: true },
+		options: {
+			parseFrontmatter: true,
+			mdxOptions: {
+				rehypePlugins: [
+					rehypeHighlight,
+					rehypeSlug,
+					[
+						rehypeAutolinkHeadings,
+						{
+							behavior: 'wrap',
+						},
+					],
+				],
+			},
+		},
 		source: lines,
 	});
 

@@ -9,7 +9,7 @@ interface CustomImageProps {
 export const CustomImage: React.FC<CustomImageProps> = (props) => {
 	const priority = props.priority ? true : false;
 	return (
-		<div className="w-full h-full m-4">
+		<div className="w-full h-full">
 			<Image
 				alt={props.alt}
 				className="rounded-lg mx-auto"
